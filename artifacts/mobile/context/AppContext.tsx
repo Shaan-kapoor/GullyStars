@@ -4,6 +4,12 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 export type Sport = "cricket" | "football" | "basketball";
 export type UserRole = "player" | "captain" | "organiser" | "fan";
 
+export interface GeoLocation {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -24,9 +30,25 @@ export interface TeamMember {
 
 export interface PlayerStats {
   matches: number;
-  cricket?: { runs: number; wickets: number; catches: number };
-  football?: { goals: number; assists: number; cleanSheets: number };
-  basketball?: { points: number; rebounds: number; assists: number };
+  cricket?: {
+    runs: number;
+    innings: number;
+    highScore: number;
+    wickets: number;
+    ballsBowled: number;
+    runsConceded: number;
+  };
+  football?: {
+    goals: number;
+    assists: number;
+    appearances: number;
+  };
+  basketball?: {
+    points: number;
+    rebounds: number;
+    assists: number;
+    games: number;
+  };
 }
 
 export interface Team {
@@ -39,6 +61,7 @@ export interface Team {
   members: TeamMember[];
   joinRequests: string[];
   createdAt: string;
+  location?: GeoLocation;
 }
 
 export interface TrainingSession {
@@ -78,6 +101,7 @@ export interface Tournament {
   fixtures: Fixture[];
   standings: Standing[];
   createdAt: string;
+  location?: GeoLocation;
 }
 
 export interface Fixture {
@@ -164,10 +188,20 @@ const SEED_DATA: AppState = {
       captainId: "user-captain-1",
       isPublic: true,
       description: "The best street football crew in East End. Five-a-side champions 2024.",
+      location: { lat: 51.5453, lng: -0.0558, address: "Hackney, East London" },
       members: [
-        { id: "user-captain-1", name: "Raj Kumar", role: "captain", sport: "football", joinedAt: "2024-01-15", stats: { matches: 24, football: { goals: 12, assists: 8, cleanSheets: 0 } } },
-        { id: "user-p1", name: "Arjun Singh", role: "player", sport: "football", joinedAt: "2024-01-20", stats: { matches: 20, football: { goals: 8, assists: 5, cleanSheets: 0 } } },
-        { id: "user-p2", name: "Priya Sharma", role: "player", sport: "football", joinedAt: "2024-02-01", stats: { matches: 18, football: { goals: 3, assists: 11, cleanSheets: 0 } } },
+        {
+          id: "user-captain-1", name: "Raj Kumar", role: "captain", sport: "football", joinedAt: "2024-01-15",
+          stats: { matches: 24, football: { goals: 12, assists: 8, appearances: 24 } },
+        },
+        {
+          id: "user-p1", name: "Arjun Singh", role: "player", sport: "football", joinedAt: "2024-01-20",
+          stats: { matches: 20, football: { goals: 8, assists: 5, appearances: 20 } },
+        },
+        {
+          id: "user-p2", name: "Priya Sharma", role: "player", sport: "football", joinedAt: "2024-02-01",
+          stats: { matches: 18, football: { goals: 3, assists: 11, appearances: 18 } },
+        },
       ],
       joinRequests: [],
       createdAt: "2024-01-10",
@@ -179,9 +213,16 @@ const SEED_DATA: AppState = {
       captainId: "user-captain-2",
       isPublic: true,
       description: "Grassroots cricket club. Weekend warriors with serious game.",
+      location: { lat: 51.4834, lng: -0.1143, address: "Kennington, South London" },
       members: [
-        { id: "user-captain-2", name: "Mohammed Ali", role: "captain", sport: "cricket", joinedAt: "2024-01-05", stats: { matches: 15, cricket: { runs: 342, wickets: 18, catches: 12 } } },
-        { id: "user-p3", name: "Deepa Nair", role: "player", sport: "cricket", joinedAt: "2024-01-25", stats: { matches: 12, cricket: { runs: 187, wickets: 5, catches: 8 } } },
+        {
+          id: "user-captain-2", name: "Mohammed Ali", role: "captain", sport: "cricket", joinedAt: "2024-01-05",
+          stats: { matches: 15, cricket: { runs: 342, innings: 14, highScore: 64, wickets: 18, ballsBowled: 312, runsConceded: 276 } },
+        },
+        {
+          id: "user-p3", name: "Deepa Nair", role: "player", sport: "cricket", joinedAt: "2024-01-25",
+          stats: { matches: 12, cricket: { runs: 187, innings: 11, highScore: 64, wickets: 5, ballsBowled: 84, runsConceded: 98 } },
+        },
       ],
       joinRequests: [],
       createdAt: "2024-01-01",
@@ -193,8 +234,12 @@ const SEED_DATA: AppState = {
       captainId: "user-captain-3",
       isPublic: false,
       description: "3v3 and 5v5 basketball. Invite only. Competitive but fun.",
+      location: { lat: 51.4613, lng: -0.1156, address: "Brixton, South London" },
       members: [
-        { id: "user-captain-3", name: "James Okafor", role: "captain", sport: "basketball", joinedAt: "2024-02-01", stats: { matches: 22, basketball: { points: 287, rebounds: 145, assists: 98 } } },
+        {
+          id: "user-captain-3", name: "James Okafor", role: "captain", sport: "basketball", joinedAt: "2024-02-01",
+          stats: { matches: 22, basketball: { points: 287, rebounds: 145, assists: 98, games: 22 } },
+        },
       ],
       joinRequests: [],
       createdAt: "2024-02-01",
@@ -247,6 +292,33 @@ const SEED_DATA: AppState = {
       score: { home: 187, away: 142 },
       result: "win",
     },
+    {
+      id: "match-3",
+      teamId: "team-1",
+      opponent: "City Warriors",
+      date: "2026-04-08",
+      time: "10:00",
+      location: "Victoria Park Pitch 2",
+      sport: "football",
+      status: "completed",
+      rsvps: { "user-p1": "going" },
+      score: { home: 2, away: 2 },
+      result: "draw",
+    },
+    {
+      id: "match-4",
+      teamId: "team-1",
+      opponent: "Rapid Ravens",
+      date: "2026-04-10",
+      time: "10:00",
+      location: "Gully Cup Venue",
+      sport: "football",
+      status: "completed",
+      rsvps: { "user-p1": "going", "user-p2": "going" },
+      score: { home: 3, away: 1 },
+      result: "win",
+      tournamentId: "tourn-1",
+    },
   ],
   tournaments: [
     {
@@ -256,6 +328,7 @@ const SEED_DATA: AppState = {
       organiserId: "user-org-1",
       format: "round-robin",
       status: "ongoing",
+      location: { lat: 51.5354, lng: -0.0356, address: "Victoria Park, Tower Hamlets" },
       teams: ["team-1", "team-4", "team-5", "team-6"],
       fixtures: [
         { id: "fix-1", tournamentId: "tourn-1", homeTeamId: "team-1", awayTeamId: "team-4", homeTeamName: "Street Lions FC", awayTeamName: "Rapid Ravens", date: "2026-04-10", status: "completed", score: { home: 3, away: 1 }, round: 1 },
@@ -312,7 +385,7 @@ const SEED_DATA: AppState = {
   ],
 };
 
-const STORAGE_KEY = "gully_stars_state";
+const STORAGE_KEY = "gully_stars_state_v2";
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(SEED_DATA);
@@ -326,11 +399,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } catch {}
       }
     });
-  }, []);
-
-  const save = useCallback((next: AppState) => {
-    setState(next);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   }, []);
 
   const update = useCallback((updater: (prev: AppState) => AppState) => {
@@ -406,12 +474,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const team = prev.teams.find((t) => t.id === teamId);
       if (!team) return prev;
       const member: TeamMember = {
-        id: userId,
-        name: userId,
-        role: "player",
-        sport: team.sport,
-        joinedAt: new Date().toISOString(),
-        stats: { matches: 0 },
+        id: userId, name: userId, role: "player", sport: team.sport,
+        joinedAt: new Date().toISOString(), stats: { matches: 0 },
       };
       return {
         ...prev,
@@ -523,22 +587,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         ...state,
-        setCurrentUser,
-        createTeam,
-        joinTeam,
-        requestJoinTeam,
-        approveJoinRequest,
-        createTrainingSession,
-        respondToTraining,
-        createMatch,
-        respondToMatch,
-        submitScore,
-        createTournament,
-        applyToTournament,
-        addFeedPost,
-        likePost,
-        followTeam,
-        unfollowTeam,
+        setCurrentUser, createTeam, joinTeam, requestJoinTeam, approveJoinRequest,
+        createTrainingSession, respondToTraining, createMatch, respondToMatch, submitScore,
+        createTournament, applyToTournament, addFeedPost, likePost, followTeam, unfollowTeam,
         completeOnboarding,
       }}
     >
