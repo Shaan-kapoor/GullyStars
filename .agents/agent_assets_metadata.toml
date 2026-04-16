@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "HerbQr4reYdRoxARwqkkK"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "PDeeAzB0qhZQMVY9A6VGH"
+uri = "file://artifacts/mobile/assets/images/cricket-hero.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "s5sMcmOfW-dDFB23hX8P7"
+uri = "file://artifacts/mobile/assets/images/football-hero.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "DHuMQiSq3zyRF_WLWCHZT"
+uri = "file://artifacts/mobile/assets/images/basketball-hero.png"
+type = "image"
+title = "generated_image"
