@@ -20,7 +20,16 @@
       "backgroundColor": "#0A0E13"
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "bundler": "metro",
+      "themeColor": "#00C896",
+      "backgroundColor": "#0A0E13",
+      "lang": "en",
+      "meta": {
+        "viewport": {
+          "content": "width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+        }
+      }
     },
     "plugins": [
       [
