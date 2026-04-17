@@ -105,21 +105,24 @@ export default function TeamsScreen() {
 
   const filtered = teams.filter((t) => filter === "all" || t.sport === filter);
 
-  const handleCreate = () => {
-    if (!name.trim() || !currentUser) return;
+  const handleCreate = async () => {
+    if (!name.trim() || !currentUser || creating) return;
     setCreating(true);
-    const team = createTeam({
-      name: name.trim(),
-      description: desc.trim(),
-      sport,
-      captainId: currentUser.id,
-      isPublic,
-    });
-    setCreating(false);
-    setShowCreate(false);
-    setName("");
-    setDesc("");
-    router.push({ pathname: "/team/[id]", params: { id: team.id } });
+    try {
+      const team = await createTeam({
+        name: name.trim(),
+        description: desc.trim(),
+        sport,
+        captainId: currentUser.id,
+        isPublic,
+      });
+      setShowCreate(false);
+      setName("");
+      setDesc("");
+      router.push({ pathname: "/team/[id]", params: { id: team.id } });
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (

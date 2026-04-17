@@ -85,19 +85,22 @@ export default function TournamentsScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const handleCreate = () => {
-    if (!name.trim() || !currentUser) return;
+  const handleCreate = async () => {
+    if (!name.trim() || !currentUser || creating) return;
     setCreating(true);
-    createTournament({
-      name: name.trim(),
-      sport,
-      organiserId: currentUser.id,
-      format,
-      status: "registration",
-    });
-    setCreating(false);
-    setShowCreate(false);
-    setName("");
+    try {
+      await createTournament({
+        name: name.trim(),
+        sport,
+        organiserId: currentUser.id,
+        format,
+        status: "registration",
+      });
+      setShowCreate(false);
+      setName("");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (

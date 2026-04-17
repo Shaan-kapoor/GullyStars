@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { SportBadge, sportColor } from "@/components/SportBadge";
 import { FeedPost, useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { uploadImageToStorage } from "@/lib/supabase";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -104,11 +105,12 @@ function PostCard({ post, index }: { post: FeedPost; index: number }) {
 export default function FeedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { feedPosts, currentUser, addFeedPost, teams } = useApp();
+  const { feedPosts, currentUser, addFeedPost, teams, refreshData } = useApp();
   const [composing, setComposing] = useState(false);
   const [newPost, setNewPost] = useState("");
   const [pickedImage, setPickedImage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [posting, setPosting] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -131,30 +133,39 @@ export default function FeedScreen() {
     }
   };
 
-  const handlePost = () => {
-    if (!newPost.trim() && !pickedImage) return;
-    if (!currentUser) return;
-    addFeedPost({
-      teamId: myTeam?.id ?? "unknown",
-      teamName: myTeam?.name ?? "My Team",
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      content: newPost.trim(),
-      imageUri: pickedImage ?? undefined,
-      sport: currentUser.sport,
-      type: "general",
-    });
-    setNewPost("");
-    setPickedImage(null);
-    setComposing(false);
+  const handlePost = async () => {
+    if ((!newPost.trim() && !pickedImage) || !currentUser || posting) return;
+    setPosting(true);
+    try {
+      let imageUri: string | undefined;
+      if (pickedImage) {
+        const url = await uploadImageToStorage(pickedImage);
+        imageUri = url ?? undefined;
+      }
+      await addFeedPost({
+        teamId: myTeam?.id ?? "unknown",
+        teamName: myTeam?.name ?? "My Team",
+        authorId: currentUser.id,
+        authorName: currentUser.name,
+        content: newPost.trim(),
+        imageUri,
+        sport: currentUser.sport,
+        type: "general",
+      });
+      setNewPost("");
+      setPickedImage(null);
+      setComposing(false);
+    } finally {
+      setPosting(false);
+    }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
+    try { await refreshData(); } finally { setRefreshing(false); }
   };
 
-  const canPost = (newPost.trim().length > 0 || !!pickedImage) && !!currentUser;
+  const canPost = (newPost.trim().length > 0 || !!pickedImage) && !!currentUser && !posting;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -213,10 +224,11 @@ export default function FeedScreen() {
               </Pressable>
               <Pressable
                 onPress={handlePost}
+                disabled={!canPost}
                 style={[styles.sendBtn, { backgroundColor: canPost ? colors.primary : colors.secondary }]}
               >
-                <Ionicons name="send" size={16} color={canPost ? colors.primaryForeground : colors.mutedForeground} />
-                <Text style={[styles.sendLabel, { color: canPost ? colors.primaryForeground : colors.mutedForeground }]}>Post</Text>
+                <Ionicons name={posting ? "hourglass-outline" : "send"} size={16} color={canPost ? colors.primaryForeground : colors.mutedForeground} />
+                <Text style={[styles.sendLabel, { color: canPost ? colors.primaryForeground : colors.mutedForeground }]}>{posting ? "Posting…" : "Post"}</Text>
               </Pressable>
             </View>
           </View>

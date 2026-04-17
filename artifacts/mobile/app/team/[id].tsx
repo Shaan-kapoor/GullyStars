@@ -71,25 +71,25 @@ export default function TeamDetailScreen() {
   const teamTraining = trainingSessions.filter((s) => s.teamId === team.id);
   const teamMatches = matches.filter((m) => m.teamId === team.id);
 
-  const handleCreateTraining = () => {
+  const handleCreateTraining = async () => {
     if (!tsTitle || !tsDate || !tsTime || !tsLocation || !currentUser) return;
-    createTrainingSession({ teamId: team.id, title: tsTitle, date: tsDate, time: tsTime, location: tsLocation, createdBy: currentUser.id });
+    await createTrainingSession({ teamId: team.id, title: tsTitle, date: tsDate, time: tsTime, location: tsLocation, createdBy: currentUser.id });
     setShowTrainingModal(false);
     setTsTitle(""); setTsDate(""); setTsTime(""); setTsLocation("");
   };
 
-  const handleCreateMatch = () => {
+  const handleCreateMatch = async () => {
     if (!mOpponent || !mDate || !mTime || !mLocation || !currentUser) return;
-    createMatch({ teamId: team.id, opponent: mOpponent, date: mDate, time: mTime, location: mLocation, sport: team.sport });
+    await createMatch({ teamId: team.id, opponent: mOpponent, date: mDate, time: mTime, location: mLocation, sport: team.sport });
     setShowMatchModal(false);
     setMOpponent(""); setMDate(""); setMTime(""); setMLocation("");
   };
 
-  const handleSubmitScore = (matchId: string) => {
+  const handleSubmitScore = async (matchId: string) => {
     const h = parseInt(scoreHome);
     const a = parseInt(scoreAway);
     if (isNaN(h) || isNaN(a)) return;
-    submitScore(matchId, { home: h, away: a });
+    await submitScore(matchId, { home: h, away: a });
     setShowScoreModal(null);
     setScoreHome(""); setScoreAway("");
   };

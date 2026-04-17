@@ -11,9 +11,20 @@
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **Mobile framework**: Expo (React Native) with Expo Router v6
-- **State management**: React Context + AsyncStorage (frontend-only, no backend)
+- **Database**: Supabase (PostgreSQL) — all app data persisted server-side via `@supabase/supabase-js`
+- **Image Storage**: Supabase Storage bucket `feed-images` (public, for feed post images)
+- **Local storage**: AsyncStorage — only for user identity UUID + onboarding state + followed teams
 - **API framework**: Express 5 (shared API server, unused in first build)
 - **Build**: esbuild (API server)
+
+## Supabase
+
+- Tables: `users`, `teams`, `feed_posts`, `training_sessions`, `matches`, `tournaments`
+- Credentials: `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (secrets)
+- Client: `artifacts/mobile/lib/supabase.ts` — also exports `uploadImageToStorage()`
+- Schema SQL: `artifacts/mobile/supabase-schema.sql` — run in Supabase SQL Editor
+- Seed data: auto-seeded on first launch if tables are empty
+- RLS: permissive (all operations allowed for anon, identity enforced via UUID in AsyncStorage)
 
 ## App Structure
 
