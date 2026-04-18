@@ -1,7 +1,5 @@
 # Gully Stars
 
-This is a React Native mobile application built with Expo.
-
 ## Prerequisites
 
 Before you start, make sure you have the following installed on your machine:
@@ -30,5 +28,5 @@ Before you start, make sure you have the following installed on your machine:
 
 ## Workspaces
 This application uses a pnpm workspace structure:
-- `artifacts/mobile` - Contains the React Native Expo mobile application.
+- `artifacts/mobile` - Contains the React Native Expo application.
 - `scripts` - Internal utility scripts.
