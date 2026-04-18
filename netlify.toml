@@ -1,0 +1,17 @@
+[build]
+  # We install pnpm, install dependencies, and then build the web version of the Expo app
+  command = "npm install -g pnpm && pnpm install && cd artifacts/mobile && pnpm exec expo export -p web"
+  # Expo exports the web files to the dist directory
+  publish = "artifacts/mobile/dist"
+
+# This handles client-side routing for the Expo Router web app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  # Ensure fonts and symbols load properly by setting appropriate CORS headers securely
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
