@@ -1,11 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import Head from "expo-router/head";
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import MapView, { Marker } from "@teovilla/react-native-web-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { sportColor } from "@/components/SportBadge";
 import { useColors } from "@/hooks/useColors";
+
+const MONOCHROME_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#0A0E13" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#4A5568" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0A0E13" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#1C2530" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#253040" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#374151" }] },
+  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#141A23" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#060A10" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#1E2D3D" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#0D1117" }] },
+];
 
 type MarkerType = "team" | "tournament";
 export interface GeoMapMarker {
@@ -28,6 +47,7 @@ export default function MapViewComponent({
   setFilter: (f: "all" | "teams" | "tournaments") => void;
 }) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
 
   const filtered = markers.filter(
@@ -36,8 +56,8 @@ export default function MapViewComponent({
   const selectedMarker = filtered.find((m) => m.id === selected);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+    <View style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Map</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Teams and tournaments near you</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -57,62 +77,83 @@ export default function MapViewComponent({
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120, paddingTop: 8 }}>
-        <View style={[styles.webBanner, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="map" size={32} color={colors.mutedForeground} />
-          <Text style={[styles.webBannerTitle, { color: colors.foreground }]}>Interactive map on mobile</Text>
-          <Text style={[styles.webBannerSub, { color: colors.mutedForeground }]}>
-            Open in Expo Go to see teams and tournaments geo-marked on a live black-and-white map
-          </Text>
-        </View>
-
-        <View style={{ paddingHorizontal: 20, gap: 10 }}>
+      <View style={styles.mapContainer}>
+        <MapView
+          style={StyleSheet.absoluteFill}
+          customMapStyle={MONOCHROME_STYLE}
+          initialRegion={{ latitude: 12.9716, longitude: 77.5946, latitudeDelta: 0.15, longitudeDelta: 0.15 }}
+          googleMapsApiKey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
+          provider="google"
+        >
           {filtered.map((m) => {
             const sc = sportColor(m.sport as any);
-            const isSelected = selected === m.id;
+            const isSelected = m.id === selected;
             return (
-              <Pressable
+              <Marker
                 key={m.id}
-                style={[styles.listItem, { backgroundColor: isSelected ? sc + "12" : colors.card, borderColor: isSelected ? sc : colors.border }]}
-                onPress={() => setSelected(isSelected ? null : m.id)}
+                coordinate={{ latitude: m.lat, longitude: m.lng }}
+                onPress={() => setSelected(m.id === selected ? null : m.id)}
               >
-                <View style={[styles.listIcon, { backgroundColor: sc + "22" }]}>
+                <View style={[styles.markerPin, {
+                  backgroundColor: sc, borderColor: isSelected ? "#fff" : sc,
+                  transform: [{ scale: isSelected ? 1.25 : 1 }],
+                }]}>
                   {m.type === "tournament"
-                    ? <Ionicons name="trophy" size={18} color={sc} />
-                    : <Ionicons name="people" size={18} color={sc} />
+                    ? <Ionicons name="trophy" size={13} color="#000" />
+                    : <Ionicons name="people" size={13} color="#000" />
                   }
                 </View>
-                <View style={styles.listInfo}>
-                  <Text style={[styles.listName, { color: colors.foreground }]}>{m.name}</Text>
-                  <Text style={[styles.listAddr, { color: colors.mutedForeground }]}>{m.address}</Text>
-                </View>
-                <View style={[styles.typePill, { backgroundColor: m.type === "tournament" ? colors.accent + "22" : colors.primary + "22" }]}>
-                  <Text style={[styles.typePillText, { color: m.type === "tournament" ? colors.accent : colors.primary }]}>
-                    {m.type === "tournament" ? "Cup" : "Team"}
-                  </Text>
-                </View>
-              </Pressable>
+              </Marker>
             );
           })}
+        </MapView>
+
+        <View style={[styles.legend, { backgroundColor: colors.card + "EE", borderColor: colors.border }]}>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.legendText, { color: colors.mutedForeground }]}>Teams</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
+            <Text style={[styles.legendText, { color: colors.mutedForeground }]}>Tournaments</Text>
+          </View>
         </View>
 
         {selectedMarker && (
-          <Pressable
-            style={[styles.viewBtn, { backgroundColor: colors.primary, marginHorizontal: 20, marginTop: 16 }]}
-            onPress={() => {
-              if (selectedMarker.type === "team") {
-                router.push({ pathname: "/team/[id]", params: { id: selectedMarker.id } });
-              } else {
-                router.push({ pathname: "/tournament/[id]", params: { id: selectedMarker.id } });
-              }
-            }}
-          >
-            <Text style={[styles.viewBtnText, { color: colors.primaryForeground }]}>
-              View {selectedMarker.name}
-            </Text>
-          </Pressable>
+          <View style={[styles.callout, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.calloutHeader}>
+              <View style={[styles.calloutIcon, { backgroundColor: sportColor(selectedMarker.sport as any) + "22" }]}>
+                {selectedMarker.type === "tournament"
+                  ? <Ionicons name="trophy" size={18} color={sportColor(selectedMarker.sport as any)} />
+                  : <Ionicons name="people" size={18} color={sportColor(selectedMarker.sport as any)} />
+                }
+              </View>
+              <View style={styles.calloutInfo}>
+                <Text style={[styles.calloutName, { color: colors.foreground }]}>{selectedMarker.name}</Text>
+                <Text style={[styles.calloutAddr, { color: colors.mutedForeground }]}>{selectedMarker.address}</Text>
+              </View>
+              <Pressable onPress={() => setSelected(null)}>
+                <Ionicons name="close" size={18} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <Pressable
+              style={[styles.calloutBtn, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                setSelected(null);
+                if (selectedMarker.type === "team") {
+                  router.push({ pathname: "/team/[id]", params: { id: selectedMarker.id } });
+                } else {
+                  router.push({ pathname: "/tournament/[id]", params: { id: selectedMarker.id } });
+                }
+              }}
+            >
+              <Text style={[styles.calloutBtnText, { color: colors.primaryForeground }]}>
+                View {selectedMarker.type === "team" ? "Team" : "Tournament"}
+              </Text>
+            </Pressable>
+          </View>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -125,16 +166,18 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: "row" },
   filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 100 },
   filterText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  webBanner: { margin: 20, borderRadius: 16, borderWidth: 1, padding: 20, alignItems: "center", gap: 8, marginBottom: 16 },
-  webBannerTitle: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  webBannerSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 18 },
-  listItem: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1.5 },
-  listIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  listInfo: { flex: 1 },
-  listName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  listAddr: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  typePill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100 },
-  typePillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  viewBtn: { paddingVertical: 14, borderRadius: 100, alignItems: "center" },
-  viewBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  mapContainer: { flex: 1 },
+  markerPin: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  legend: { position: "absolute", top: 16, right: 16, borderRadius: 10, borderWidth: 1, padding: 10, gap: 6 },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  callout: { position: "absolute", bottom: 24, left: 16, right: 16, borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
+  calloutHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  calloutIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  calloutInfo: { flex: 1 },
+  calloutName: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  calloutAddr: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  calloutBtn: { paddingVertical: 11, borderRadius: 100, alignItems: "center" },
+  calloutBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
 });

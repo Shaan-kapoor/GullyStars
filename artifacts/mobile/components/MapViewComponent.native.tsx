@@ -81,7 +81,7 @@ export default function MapViewComponent({
         <MapView
           style={StyleSheet.absoluteFill}
           customMapStyle={MONOCHROME_STYLE}
-          initialRegion={{ latitude: 51.505, longitude: -0.09, latitudeDelta: 0.15, longitudeDelta: 0.15 }}
+          initialRegion={{ latitude: 12.9716, longitude: 77.5946, latitudeDelta: 0.15, longitudeDelta: 0.15 }}
         >
           {filtered.map((m) => {
             const sc = sportColor(m.sport as any);

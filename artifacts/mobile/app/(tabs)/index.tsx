@@ -41,7 +41,7 @@ const TYPE_LABEL: Record<string, string> = {
 
 function PostCard({ post, index }: { post: FeedPost; index: number }) {
   const colors = useColors();
-  const { currentUser, likePost } = useApp();
+  const { currentUser, likePost, deletePost } = useApp();
   const liked = currentUser ? post.likes.includes(currentUser.id) : false;
   const sc = sportColor(post.sport);
 
@@ -93,6 +93,18 @@ function PostCard({ post, index }: { post: FeedPost; index: number }) {
               {post.likes.length}
             </Text>
           </Pressable>
+          {currentUser && currentUser.id === post.authorId && (
+            <Pressable
+              style={styles.actionBtn}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                deletePost(post.id);
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+            </Pressable>
+          )}
           <View style={[styles.typeBadge, { backgroundColor: sc + "18" }]}>
             <Text style={[styles.typeText, { color: sc }]}>{TYPE_LABEL[post.type] ?? post.type}</Text>
           </View>

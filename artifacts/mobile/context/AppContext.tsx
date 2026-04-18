@@ -169,6 +169,7 @@ interface AppContextType extends AppState {
   applyToTournament: (tournamentId: string, teamId: string) => Promise<void>;
   addFeedPost: (post: Omit<FeedPost, "id" | "likes" | "createdAt">) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
   followTeam: (teamId: string) => void;
   unfollowTeam: (teamId: string) => void;
   completeOnboarding: (user: User) => Promise<void>;
@@ -181,69 +182,33 @@ const generateId = () => Date.now().toString() + Math.random().toString(36).subs
 const USER_KEY = "gully_stars_user_v3";
 
 const SEED_TEAMS: Omit<Team, never>[] = [
-  {
-    id: "team-1",
-    name: "Street Lions FC",
-    sport: "football",
-    captainId: "seed-captain-1",
-    isPublic: true,
-    description: "The best street football crew in East End. Five-a-side champions 2024.",
-    location: { lat: 51.5453, lng: -0.0558, address: "Hackney, East London" },
-    members: [
-      { id: "seed-captain-1", name: "Raj Kumar", role: "captain", sport: "football", joinedAt: "2024-01-15", stats: { matches: 24, football: { goals: 12, assists: 8, appearances: 24 } } },
-      { id: "seed-p1", name: "Arjun Singh", role: "player", sport: "football", joinedAt: "2024-01-20", stats: { matches: 20, football: { goals: 8, assists: 5, appearances: 20 } } },
-      { id: "seed-p2", name: "Priya Sharma", role: "player", sport: "football", joinedAt: "2024-02-01", stats: { matches: 18, football: { goals: 3, assists: 11, appearances: 18 } } },
-    ],
-    joinRequests: [],
-    createdAt: "2024-01-10",
-  },
-  {
-    id: "team-2",
-    name: "Thunder Crickets",
-    sport: "cricket",
-    captainId: "seed-captain-2",
-    isPublic: true,
-    description: "Grassroots cricket club. Weekend warriors with serious game.",
-    location: { lat: 51.4834, lng: -0.1143, address: "Kennington, South London" },
-    members: [
-      { id: "seed-captain-2", name: "Mohammed Ali", role: "captain", sport: "cricket", joinedAt: "2024-01-05", stats: { matches: 15, cricket: { runs: 342, innings: 14, highScore: 64, wickets: 18, ballsBowled: 312, runsConceded: 276 } } },
-      { id: "seed-p3", name: "Deepa Nair", role: "player", sport: "cricket", joinedAt: "2024-01-25", stats: { matches: 12, cricket: { runs: 187, innings: 11, highScore: 64, wickets: 5, ballsBowled: 84, runsConceded: 98 } } },
-    ],
-    joinRequests: [],
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "team-3",
-    name: "Hoopsters United",
-    sport: "basketball",
-    captainId: "seed-captain-3",
-    isPublic: false,
-    description: "3v3 and 5v5 basketball. Invite only. Competitive but fun.",
-    location: { lat: 51.4613, lng: -0.1156, address: "Brixton, South London" },
-    members: [
-      { id: "seed-captain-3", name: "James Okafor", role: "captain", sport: "basketball", joinedAt: "2024-02-01", stats: { matches: 22, basketball: { points: 287, rebounds: 145, assists: 98, games: 22 } } },
-    ],
-    joinRequests: [],
-    createdAt: "2024-02-01",
-  },
+  { id: "team-1", name: "Street Lions FC", sport: "football", captainId: "seed-captain-1", isPublic: true, description: "The best street football crew in Koramangala. Five-a-side champions 2024.", location: { lat: 12.9352, lng: 77.6245, address: "Koramangala, Bangalore" }, members: [ { id: "seed-captain-1", name: "Raj Kumar", role: "captain", sport: "football", joinedAt: "2024-01-15", stats: { matches: 24, football: { goals: 12, assists: 8, appearances: 24 } } }, { id: "seed-p1", name: "Arjun Singh", role: "player", sport: "football", joinedAt: "2024-01-20", stats: { matches: 20, football: { goals: 8, assists: 5, appearances: 20 } } }, { id: "seed-p2", name: "Priya Sharma", role: "player", sport: "football", joinedAt: "2024-02-01", stats: { matches: 18, football: { goals: 3, assists: 11, appearances: 18 } } } ], joinRequests: [], createdAt: "2024-01-10" },
+  { id: "team-2", name: "Thunder Crickets", sport: "cricket", captainId: "seed-captain-2", isPublic: true, description: "Grassroots cricket club. Weekend warriors with serious game.", location: { lat: 12.9784, lng: 77.6408, address: "Indiranagar, Bangalore" }, members: [ { id: "seed-captain-2", name: "Mohammed Ali", role: "captain", sport: "cricket", joinedAt: "2024-01-05", stats: { matches: 15, cricket: { runs: 342, innings: 14, highScore: 64, wickets: 18, ballsBowled: 312, runsConceded: 276 } } }, { id: "seed-p3", name: "Deepa Nair", role: "player", sport: "cricket", joinedAt: "2024-01-25", stats: { matches: 12, cricket: { runs: 187, innings: 11, highScore: 64, wickets: 5, ballsBowled: 84, runsConceded: 98 } } } ], joinRequests: [], createdAt: "2024-01-01" },
+  { id: "team-3", name: "Hoopsters United", sport: "basketball", captainId: "seed-captain-3", isPublic: false, description: "3v3 and 5v5 basketball. Invite only. Competitive but fun.", location: { lat: 12.9250, lng: 77.5938, address: "Jayanagar, Bangalore" }, members: [ { id: "seed-captain-3", name: "James Okafor", role: "captain", sport: "basketball", joinedAt: "2024-02-01", stats: { matches: 22, basketball: { points: 287, rebounds: 145, assists: 98, games: 22 } } } ], joinRequests: [], createdAt: "2024-02-01" },
+  { id: "team-4", name: "Whitefield Warriors", sport: "football", captainId: "seed-captain-4", isPublic: true, description: "Tech-park football regulars. Fast paced pressing playstyle.", location: { lat: 12.9698, lng: 77.7499, address: "Whitefield, Bangalore" }, members: [ { id: "seed-captain-4", name: "Rohit Verma", role: "captain", sport: "football", joinedAt: "2024-03-01", stats: { matches: 10, football: { goals: 4, assists: 3, appearances: 10 } } }, { id: "seed-p4", name: "Kiran R", role: "player", sport: "football", joinedAt: "2024-03-05", stats: { matches: 9, football: { goals: 1, assists: 5, appearances: 9 } } } ], joinRequests: [], createdAt: "2024-03-01" },
+  { id: "team-5", name: "Hebbal Hitters", sport: "cricket", captainId: "seed-captain-5", isPublic: true, description: "Leather ball cricket enthusiasts meeting every Sunday.", location: { lat: 13.0354, lng: 77.5988, address: "Hebbal, Bangalore" }, members: [ { id: "seed-captain-5", name: "Suresh Menon", role: "captain", sport: "cricket", joinedAt: "2024-04-02", stats: { matches: 8, cricket: { runs: 120, innings: 7, highScore: 45, wickets: 3, ballsBowled: 45, runsConceded: 60 } } } ], joinRequests: [], createdAt: "2024-04-01" },
+  { id: "team-6", name: "Malleswaram Mavericks", sport: "basketball", captainId: "seed-captain-6", isPublic: true, description: "Court kings of North-West Bangalore.", location: { lat: 13.0031, lng: 77.5643, address: "Malleshwaram, Bangalore" }, members: [ { id: "seed-captain-6", name: "Anil Desai", role: "captain", sport: "basketball", joinedAt: "2024-05-15", stats: { matches: 15, basketball: { points: 150, rebounds: 80, assists: 40, games: 15 } } }, { id: "seed-p5", name: "Varun K", role: "player", sport: "basketball", joinedAt: "2024-05-20", stats: { matches: 12, basketball: { points: 90, rebounds: 30, assists: 25, games: 12 } } } ], joinRequests: [], createdAt: "2024-05-10" }
 ];
 
 const SEED_POSTS: Omit<FeedPost, never>[] = [
   { id: "seed-fp-1", teamId: "team-2", teamName: "Thunder Crickets", authorId: "seed-captain-2", authorName: "Mohammed Ali", content: "VICTORY! We chased down 143 with 5 overs to spare. Deepa's unbeaten 64 was electric. That's back-to-back wins!", sport: "cricket", likes: ["seed-p1", "seed-captain-3"], createdAt: new Date(Date.now() - 2 * 3600000).toISOString(), type: "result" },
   { id: "seed-fp-2", teamId: "team-1", teamName: "Street Lions FC", authorId: "seed-captain-1", authorName: "Raj Kumar", content: "Training this Sunday 6:30am at Rec Ground. Come sharp, we've got the Gully Cup semifinal coming up!", sport: "football", likes: ["seed-p2"], createdAt: new Date(Date.now() - 5 * 3600000).toISOString(), type: "training" },
   { id: "seed-fp-3", teamId: "team-3", teamName: "Hoopsters United", authorId: "seed-captain-3", authorName: "James Okafor", content: "45 points in a 3v3 tournament. James O with 22, Sanjay with 14. Nobody could stop us today.", sport: "basketball", likes: ["seed-p1", "seed-p3", "seed-captain-2"], createdAt: new Date(Date.now() - 24 * 3600000).toISOString(), type: "result" },
+  { id: "seed-fp-4", teamId: "team-4", teamName: "Whitefield Warriors", authorId: "seed-captain-4", authorName: "Rohit Verma", content: "Great session today at the Whitefield turf. The new tactics are coming together beautifully. #Warriors", sport: "football", likes: ["seed-p4", "seed-p1"], createdAt: new Date(Date.now() - 1 * 3600000).toISOString(), type: "training" },
+  { id: "seed-fp-5", teamId: "team-6", teamName: "Malleswaram Mavericks", authorId: "seed-captain-6", authorName: "Anil Desai", content: "We are officially joining the Bangalore Summer Hoops 2026. Time to bring home the trophy!", sport: "basketball", likes: ["seed-captain-3", "seed-p5"], createdAt: new Date(Date.now() - 10 * 3600000).toISOString(), type: "milestone" },
+  { id: "seed-fp-6", teamId: "team-5", teamName: "Hebbal Hitters", authorId: "seed-captain-5", authorName: "Suresh Menon", content: "Heartbreaking loss today but we fought till the last over. We will bounce back next week! 🏏", sport: "cricket", likes: ["seed-p3", "seed-captain-2"], createdAt: new Date(Date.now() - 48 * 3600000).toISOString(), type: "result" }
 ];
 
 const SEED_TRAINING: TrainingSession[] = [
-  { id: "seed-ts-1", teamId: "team-1", title: "Pre-match warmup", date: "2026-04-20", time: "06:30", location: "Rec Ground, Gate 3", createdBy: "seed-captain-1", responses: { "seed-p1": "going", "seed-p2": "maybe" } },
-  { id: "seed-ts-2", teamId: "team-2", title: "Batting nets session", date: "2026-04-19", time: "17:00", location: "Municipal Cricket Grounds", createdBy: "seed-captain-2", responses: { "seed-p3": "going" } },
+  { id: "seed-ts-1", teamId: "team-1", title: "Pre-match warmup", date: "2026-04-20", time: "06:30", location: "Koramangala Play Arena", createdBy: "seed-captain-1", responses: { "seed-p1": "going", "seed-p2": "maybe" } },
+  { id: "seed-ts-2", teamId: "team-2", title: "Batting nets session", date: "2026-04-19", time: "17:00", location: "Indiranagar Club Grounds", createdBy: "seed-captain-2", responses: { "seed-p3": "going" } },
+  { id: "seed-ts-3", teamId: "team-4", title: "Stamina drills", date: "2026-04-25", time: "07:00", location: "Whitefield Turf", createdBy: "seed-captain-4", responses: { "seed-p4": "going" } }
 ];
 
 const SEED_MATCHES: Match[] = [
-  { id: "seed-match-1", teamId: "team-1", opponent: "Red Devils", date: "2026-04-22", time: "10:00", location: "Community Grounds, Pitch B", sport: "football", status: "upcoming", rsvps: { "seed-p1": "going", "seed-p2": "going" } },
-  { id: "seed-match-2", teamId: "team-2", opponent: "Phoenix XI", date: "2026-04-12", time: "09:00", location: "Municipal Oval", sport: "cricket", status: "completed", rsvps: { "seed-p3": "going" }, score: { home: 187, away: 142 }, result: "win" },
-  { id: "seed-match-3", teamId: "team-1", opponent: "City Warriors", date: "2026-04-08", time: "10:00", location: "Victoria Park Pitch 2", sport: "football", status: "completed", rsvps: { "seed-p1": "going" }, score: { home: 2, away: 2 }, result: "draw" },
-  { id: "seed-match-4", teamId: "team-1", opponent: "Rapid Ravens", date: "2026-04-10", time: "10:00", location: "Gully Cup Venue", sport: "football", status: "completed", rsvps: { "seed-p1": "going", "seed-p2": "going" }, score: { home: 3, away: 1 }, result: "win", tournamentId: "seed-tourn-1" },
+  { id: "seed-match-1", teamId: "team-1", opponent: "Whitefield Warriors", date: "2026-04-22", time: "10:00", location: "Koramangala Play Arena, Pitch B", sport: "football", status: "upcoming", rsvps: { "seed-p1": "going", "seed-p2": "going", "seed-p4": "going" }, tournamentId: "seed-tourn-1" },
+  { id: "seed-match-2", teamId: "team-2", opponent: "Hebbal Hitters", date: "2026-04-12", time: "09:00", location: "Indiranagar Cricket Oval", sport: "cricket", status: "completed", rsvps: { "seed-p3": "going" }, score: { home: 187, away: 142 }, result: "win" },
+  { id: "seed-match-3", teamId: "team-3", opponent: "Malleswaram Mavericks", date: "2026-04-10", time: "18:00", location: "Jayanagar Indoor Stadium", sport: "basketball", status: "completed", rsvps: { "seed-p5": "going" }, score: { home: 65, away: 72 }, result: "loss", tournamentId: "seed-tourn-2" }
 ];
 
 const SEED_TOURNAMENTS: Tournament[] = [
@@ -254,22 +219,34 @@ const SEED_TOURNAMENTS: Tournament[] = [
     organiserId: "seed-org-1",
     format: "round-robin",
     status: "ongoing",
-    location: { lat: 51.5354, lng: -0.0356, address: "Victoria Park, Tower Hamlets" },
-    teams: ["team-1", "team-4", "team-5", "team-6"],
+    location: { lat: 12.9716, lng: 77.5946, address: "Cubbon Park, Bangalore" },
+    teams: ["team-1", "team-4", "team-8", "team-9"],
     fixtures: [
-      { id: "seed-fix-1", tournamentId: "seed-tourn-1", homeTeamId: "team-1", awayTeamId: "team-4", homeTeamName: "Street Lions FC", awayTeamName: "Rapid Ravens", date: "2026-04-10", status: "completed", score: { home: 3, away: 1 }, round: 1 },
-      { id: "seed-fix-2", tournamentId: "seed-tourn-1", homeTeamId: "team-5", awayTeamId: "team-6", homeTeamName: "Blazing Stars", awayTeamName: "Iron Wolves", date: "2026-04-10", status: "completed", score: { home: 2, away: 2 }, round: 1 },
-      { id: "seed-fix-3", tournamentId: "seed-tourn-1", homeTeamId: "team-1", awayTeamId: "team-5", homeTeamName: "Street Lions FC", awayTeamName: "Blazing Stars", date: "2026-04-22", status: "scheduled", round: 2 },
-      { id: "seed-fix-4", tournamentId: "seed-tourn-1", homeTeamId: "team-4", awayTeamId: "team-6", homeTeamName: "Rapid Ravens", awayTeamName: "Iron Wolves", date: "2026-04-22", status: "scheduled", round: 2 },
+      { id: "seed-fix-1", tournamentId: "seed-tourn-1", homeTeamId: "team-1", awayTeamId: "team-4", homeTeamName: "Street Lions FC", awayTeamName: "Whitefield Warriors", date: "2026-04-10", status: "completed", score: { home: 3, away: 1 }, round: 1 },
+      { id: "seed-fix-3", tournamentId: "seed-tourn-1", homeTeamId: "team-1", awayTeamId: "team-8", homeTeamName: "Street Lions FC", awayTeamName: "Blazing Stars", date: "2026-04-22", status: "scheduled", round: 2 },
     ],
     standings: [
       { teamId: "team-1", teamName: "Street Lions FC", played: 1, won: 1, lost: 0, drawn: 0, points: 3 },
-      { teamId: "team-5", teamName: "Blazing Stars", played: 1, won: 0, lost: 0, drawn: 1, points: 1 },
-      { teamId: "team-6", teamName: "Iron Wolves", played: 1, won: 0, lost: 0, drawn: 1, points: 1 },
-      { teamId: "team-4", teamName: "Rapid Ravens", played: 1, won: 0, lost: 1, drawn: 0, points: 0 },
+      { teamId: "team-8", teamName: "Blazing Stars", played: 1, won: 0, lost: 0, drawn: 1, points: 1 },
+      { teamId: "team-4", teamName: "Whitefield Warriors", played: 1, won: 0, lost: 1, drawn: 0, points: 0 },
     ],
     createdAt: "2026-04-01",
   },
+  {
+    id: "seed-tourn-2",
+    name: "Bangalore Summer Hoops",
+    sport: "basketball",
+    organiserId: "seed-org-2",
+    format: "bracket",
+    status: "ongoing",
+    location: { lat: 13.0031, lng: 77.5643, address: "Malleswaram Stadium" },
+    teams: ["team-3", "team-6"],
+    fixtures: [
+      { id: "seed-fix-bb1", tournamentId: "seed-tourn-2", homeTeamId: "team-3", awayTeamId: "team-6", homeTeamName: "Hoopsters United", awayTeamName: "Malleswaram Mavericks", date: "2026-04-10", status: "completed", score: { home: 65, away: 72 }, round: 1 },
+    ],
+    standings: [],
+    createdAt: "2026-04-05",
+  }
 ];
 
 function rowToTeam(row: any): Team {
@@ -670,6 +647,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const deletePost = useCallback(async (postId: string) => {
+    await supabase.from("feed_posts").delete().eq("id", postId);
+    setState((prev) => ({
+      ...prev,
+      feedPosts: prev.feedPosts.filter((p) => p.id !== postId)
+    }));
+  }, []);
+
   const followTeam = useCallback((teamId: string) => {
     setState((prev) => {
       if (prev.followedTeams.includes(teamId)) return prev;
@@ -693,7 +678,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...state,
         setCurrentUser, createTeam, joinTeam, requestJoinTeam, approveJoinRequest,
         createTrainingSession, respondToTraining, createMatch, respondToMatch, submitScore,
-        createTournament, applyToTournament, addFeedPost, likePost, followTeam, unfollowTeam,
+        createTournament, applyToTournament, addFeedPost, likePost, deletePost, followTeam, unfollowTeam,
         completeOnboarding, refreshData,
       }}
     >
